@@ -84,7 +84,7 @@
     \draw[->, ultra thick, black!100] (3.5, -0.5) -- (2.5, -0.5) node[midway, below, align=center] {Reverse \\ Diffusion};
 
     % Pane 2: High Entropy (t=T)
-    \node[box, label=below:{$t=T$ (Equilibrium)}] (box2) at (6,0) {};
+    \node[box, label=below:{$t=1$ (Equilibrium)}] (box2) at (6,0) {};
     \foreach \i in {1,...,50} {
         % Distribute randomly across the whole box
         \node[particle] at ($(box2.south west) + (4*rnd, 3*rnd)$) {};
@@ -157,6 +157,15 @@
             \includegraphics[width=2.5cm]{images/output_image.png}
         \end{column}
     \end{columns}
+\end{frame}
+
+\begin{frame}
+    \frametitle{Data}
+    \begin{itemize}
+        \setlength{\itemsep}{1em}
+        \item CC12M is a dataset composed by google, with roughly 6M image/caption pairs still available
+        \item Re-LAION-Caption 19M is by supermodel research derived from LAION 5B, using roughly 3M images, with four potential captions each, focusing on subject, setting, aesthetic, camera details
+    \end{itemize}
 \end{frame}
 
 \section{VAE}
@@ -308,6 +317,7 @@ return x + self.proj_out(out)
         \item Program optimisation such as memory management, device management
         \item Training compromises such as gradient accumulation, what effective batch size is useful, how hyperparameter values were selected, why some values had warmup and some didn't
         \item Any details on the discriminator at all, for example why use spectral normalisation
+        \item Gradient clipping
     \end{itemize}
 \end{frame}
 
@@ -412,16 +422,7 @@ return x + self.proj_out(out)
     Instead of a static Layer Norm $\gamma$, $\beta$, and $\alpha$ are calculated per transformer block from the combined time and text embedding.
 
     \vspace{5mm}
-    These are used in a gating mechanism, allowing less or more weight for the transformers parameters, initially not even using the transformers parameters.
-\end{frame}
-
-\begin{frame}
-    \frametitle{Data}
-    \begin{itemize}
-        \setlength{\itemsep}{1em}
-        \item CC12M is a dataset composed by google, with roughly 6M image/caption pairs still available
-        \item Re-LAION-Caption 19M is by supermodel research derived from LAION 5B, using roughly 3M images, with four potential captions each, focusing on subject, setting, aesthetic, camera details
-    \end{itemize}
+    These are used in a gating mechanism, allowing less or more weight for the transformers text parameters, initially not even using the transformers parameters related to text embeddings.
 \end{frame}
 
 \begin{frame}
@@ -434,6 +435,7 @@ return x + self.proj_out(out)
 \end{frame}
 
 \begin{frame}[fragile]
+    \frametitle{Training the DiT-UNet}
     To recap, we're trying to train a model to learn the vector field $v_t(x)$ that satisfies $$\frac{dx}{dt}=v_t(x)$$ which corresponds to learning a straight line path from the noise $p_1$ to the data $p_0$.
 
     \begin{center}
@@ -478,8 +480,10 @@ return x + self.proj_out(out)
         \item How to implement the attention mechanism, in particular how to normalise the QKV tensors
         \item Why we only apply RoPE to the self-attention but not the cross-attention
         \item Why this differential equation?
+        \item Why predict the proxy rather than noise directly?
         \item Issues with data handling
         \item What's being monitored
+        \item Gradient clipping
     \end{itemize}
 \end{frame}
 
@@ -518,8 +522,8 @@ return x + self.proj_out(out)
     \frametitle{Post Sampling}
     \begin{itemize}
         \setlength{\itemsep}{1em}
+        \item Unnormalise from DiT-UNet to VAE decoder
         \item FSQ Snapping: Round the output of the DiT to the level the FSQ-VAE expect
-        \item Classifier-free guidance: Move the sample away from the ``generic'' distribution toward the specific ``text-aligned'' distribution, in effect focusing the model
     \end{itemize}
 \end{frame}
 
@@ -536,12 +540,12 @@ return x + self.proj_out(out)
         \item Signals to watch for throughout training?
         \item How to train the language model that is being used to inject the prompts?
         \item How to determine what a ``generic'' distribution is?
-        \item Negative prompting
+        \item How to normalise and unnormalise the data at the various stages of training
         \item Guard rails
         \item How long should training go for?
-        \item How to determine any of this?
-        \item References? Where did I learn all of this?
-        \item Alternatives? What do the big companies do that I don't have the resources for? how do the big companies differ to each other?
+        \item How to determine any of this the hyperparameters?
+        \item References? Where did I learn this?
+        \item Alternatives? What do the big companies do that I don't have the resources for? How do the big companies differ to each other? Who even thought this was reasonable to try?
         \item Beside pictures, where can this be used?
     \end{itemize}
 \end{frame}
@@ -550,6 +554,17 @@ return x + self.proj_out(out)
     \frametitle{Mid-training}
     \centering
     \includegraphics[width=\textwidth]{images/mid_training.png}
+\end{frame}
+
+\begin{frame}
+    \frametitle{Magic?}
+
+    \centering
+    \includegraphics[width=\textwidth]{images/rnd_latent.png}
+
+    \vspace{2cm}
+    \centering
+    \includegraphics[height=3cm]{images/output_image.png}
 \end{frame}
 
 \end{document}
