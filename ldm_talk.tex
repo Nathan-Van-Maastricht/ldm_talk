@@ -301,7 +301,7 @@ return x + self.proj_out(out)
 \end{frame}
 
 \begin{frame}
-    \frametitle{What's Been Skipped?}
+    \frametitle{VAE: What's Been Skipped?}
     \begin{itemize}
         \setlength{\itemsep}{1em}
         \item Code book utilisation monitoring
@@ -409,7 +409,7 @@ return x + self.proj_out(out)
 
 \begin{frame}
     \frametitle{Adaptive Layer Norm}
-    Instead of a static Layer Norm $\gamma$, $\beta$, and $\alpha$ are calulated per transformer block from the combined time and text embedding.
+    Instead of a static Layer Norm $\gamma$, $\beta$, and $\alpha$ are calculated per transformer block from the combined time and text embedding.
 
     \vspace{5mm}
     These are used in a gating mechanism, allowing less or more weight for the transformers parameters, initially not even using the transformers parameters.
@@ -472,7 +472,7 @@ return x + self.proj_out(out)
 \end{frame}
 
 \begin{frame}
-    \frametitle{What's been skipped?}
+    \frametitle{DiT: What's been skipped?}
     \begin{itemize}
         \setlength{\itemsep}{1em}
         \item How to implement the attention mechanism, in particular how to normalise the QKV tensors
@@ -528,4 +528,28 @@ return x + self.proj_out(out)
     \centering
     \includegraphics[height=0.8\textheight]{images/cfg_snapping.png}
 \end{frame}
+
+\begin{frame}
+    \frametitle{What's been skipped?}
+    \begin{itemize}
+        % \setlength{\itemsep}{0.75em}
+        \item Signals to watch for throughout training?
+        \item How to train the language model that is being used to inject the prompts?
+        \item How to determine what a ``generic'' distribution is?
+        \item Negative prompting
+        \item Guard rails
+        \item How long should training go for?
+        \item How to determine any of this?
+        \item References? Where did I learn all of this?
+        \item Alternatives? What do the big companies do that I don't have the resources for? how do the big companies differ to each other?
+        \item Beside pictures, where can this be used?
+    \end{itemize}
+\end{frame}
+
+\begin{frame}
+    \frametitle{Mid-training}
+    \centering
+    \includegraphics[width=\textwidth]{images/mid_training.png}
+\end{frame}
+
 \end{document}
