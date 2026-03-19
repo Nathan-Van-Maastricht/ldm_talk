@@ -1,0 +1,164 @@
+\documentclass{article}
+
+
+\usepackage{graphicx}
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage{amssymb}
+\usepackage{tikz}
+\usetikzlibrary{calc}
+
+\usepackage{listings}
+\usepackage{xcolor}
+
+\usepackage{hyperref}
+
+\hypersetup {
+    colorlinks=true,
+    linkcolor=blue,
+    urlcolor=blue
+}
+
+\lstdefinestyle{python}{
+    language=Python,
+    basicstyle=\ttfamily\small,
+    keywordstyle=\color{blue},
+    commentstyle=\color{red},
+    stringstyle=\color{green},
+    breaklines=true,
+    breakatwhitespace=true,
+    tabsize=4
+}
+
+
+\begin{document}
+\section*{Physical Diffusion}
+
+Assume that this process can be model with a Gaussian distribution
+
+\section*{Flow Matching}
+
+\begin{itemize}
+    \item Forward diffusion simulation free in a flow matching context
+    \item We have a closed form for getting from clean image to noise image at time step $t$
+\end{itemize}
+
+\section*{High level diagram}
+
+\begin{itemize}
+    \item Reduces compute overhead
+\end{itemize}
+
+\section*{VAE Architecture}
+
+\begin{itemize}
+    \item Encoder/decoder are symmetric in the spatial up and down sampling
+\end{itemize}
+
+\section*{Residual Blocks}
+
+\begin{itemize}
+    \item This approach keeps the gradient clean, whereas post activation that was common in early residual networks, but still causes gradient vanishing in deep models because the shortcut is behind an activation and norm.
+\end{itemize}
+
+\section*{Attention Blocks}
+
+\begin{itemize}
+    \item The speedup of flash attention 2 is in memory management
+\end{itemize}
+
+\section*{Spatial Resizing}
+
+\begin{itemize}
+    \item Bilinear and bicubic interpolation introduces blurring that needs to be discarded by the VAE
+    \item The simpler approach produces less complex artifacts
+\end{itemize}
+
+\section*{FSQ Layer}
+
+\begin{itemize}
+    \item No need for loss adjustments to utilise the whole codebook
+\end{itemize}
+
+\section*{Why $2\sigma(1.6)-1$?}
+
+\begin{itemize}
+    \item Quite clsoe to uniform distribution, making codebook utilisation rise faster
+\end{itemize}
+
+\section*{VAE Summary}
+
+\begin{itemize}
+    \item All of this is to make the DiT's job easier
+\end{itemize}
+
+\section*{Training the VAE: Loss}
+
+\begin{itemize}
+    \item L1 handles structure
+    \item Adversarial handles high frequency details like fur and skin
+\end{itemize}
+
+\section*{Training the VAE: Warmup and Cooldown}
+
+\begin{itemize}
+    \item The discriminator can't be too strong too early
+\end{itemize}
+
+\section*{What's been skipped?}
+
+\begin{itemize}
+    \item Spectral norm keeps the discriminator's gradients from exploding and feeding back to the VAE
+\end{itemize}
+
+\section*{Attention}
+
+\begin{itemize}
+    \item RoPE is virtually required because the transform is position blind, whereas RoPE gives an ordering on neighbouring patches
+\end{itemize}
+
+\section*{Adaptive Layer Norm}
+
+\begin{itemize}
+    \item Initialised to 0, which allows the model to start as the identity function.
+\end{itemize}
+
+\section*{Training the DiT-UNet}
+
+\begin{itemize}
+    \item Flow Matching loss is just MSE between the predicted velocity and actual velocity
+\end{itemize}
+
+\section*{Optimisations and Stability}
+
+\begin{itemize}
+    \item EMA is what is actually used to do the sampling
+    \item float32 is required for the loss due to overflow issues
+\end{itemize}
+
+\section*{We've got a model, now what? RK2}
+
+\begin{itemize}
+    \item Take an Euler half step, then evaluate from that step where the velocity should be, then go back to the original step and move in the direction predicted by that half step
+    \item Alternative you can make a full step, evaluate, then go back and use the average of the full steps velocity, and the original points velocity (heun)
+\end{itemize}
+
+\section*{CFG}
+
+\begin{itemize}
+    \item The purpose is to align the model with the text prompt more
+\end{itemize}
+
+\section*{Post Sampling}
+
+\begin{itemize}
+    \item Snapping is optional, but tends to help the VAE produce non blurry results
+\end{itemize}
+
+\section*{Mid-Training}
+
+\begin{itemize}
+    \item Loss appears plateaued, but images get better throughout this plateau, without affecting the quality of other images
+\end{itemize}
+
+\end{document}
