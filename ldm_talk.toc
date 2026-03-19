@@ -1,3 +1,4 @@
 \beamer@sectionintoc {1}{Diffusion}{2}{0}{1}
 \beamer@sectionintoc {2}{VAE}{7}{0}{2}
 \beamer@sectionintoc {3}{DiT-UNet}{20}{0}{3}
+\beamer@sectionintoc {4}{Sampling}{30}{0}{4}

@@ -1,61 +1,24 @@
-\begin{center}
-        \resizebox{\textwidth}{!}{
-    \begin{tikzpicture}[
-        node distance=1.5cm,
-        block/.style={draw, fill=blue!10, minimum width=1.1cm, minimum height=0.8cm, rounded corners=2pt, font=\scriptsize, align=center},
-        io/.style={font=\tiny\bfseries, gray},
-        skip/.style={->, red!60, ultra thick, >=stealth},
-    ]
-        % Top Row: Encoder
-        \node [block] (b1) {Block 1};
-        \node [block, right of=b1] (b2) {Block 2};
-        \node [block, right of=b2] (b3) {Block 3};
-        \node [block, right of=b3] (b4) {Block 4};
-        \node [block, right of=b4] (b5) {Block 5};
-        \node [block, right of=b5] (b6) {Block 6};
-        \node [block, right of=b6] (b7) {Block 7};
-        \node [block, right of=b7] (b8) {Block 8};
+To recap, we're trying to train a model to learn the vector field $v_t(x)$ that satisfies $$\frac{dx}{dt}=v_t(x)$$ which corresponds to learning a straight line path from the noise $p_1$ to the data $p_0$.
 
-        % Bottom Row: Decoder (Aligned under Encoder)
-        \node [block, below of=b8, yshift=-0.5cm] (b9) {Block 9};
-        \node [block, left of=b9] (b10) {Block 10};
-        \node [block, left of=b10] (b11) {Block 11};
-        \node [block, left of=b11] (b12) {Block 12};
-        \node [block, left of=b12] (b13) {Block 13};
-        \node [block, left of=b13] (b14) {Block 14};
-        \node [block, left of=b14] (b15) {Block 15};
-        \node [block, left of=b15] (b16) {Block 16};
+    \begin{center}
+    \begin{tikzpicture}[scale=0.8]
+        % Noise Distribution
+        \draw[fill=gray!20, opacity=0.5] (-3,0) circle (0.8);
+        \node at (-3,1.2) {\tiny Noise $p_1$};
 
-        % Flow Arrows
-        \draw [->, thick] (b1) -- (b2);
-        \draw [->, thick] (b2) -- (b3);
-        \draw [->, thick] (b3) -- (b4);
-        \draw [->, thick] (b4) -- (b5);
-        \draw [->, thick] (b5) -- (b6);
-        \draw [->, thick] (b6) -- (b7);
-        \draw [->, thick] (b7) -- (b8);
-        \draw [->, thick] (b8) -- (b9); % The "Turn"
-        \draw [->, thick] (b9) -- (b10);
-        \draw [->, thick] (b10) -- (b11);
-        \draw [->, thick] (b11) -- (b12);
-        \draw [->, thick] (b12) -- (b13);
-        \draw [->, thick] (b13) -- (b14);
-        \draw [->, thick] (b14) -- (b15);
-        \draw [->, thick] (b15) -- (b16);
+        % Data Distribution
+        \draw[fill=blue!20, opacity=0.5] (3,0.5) ellipse (1.2 and 0.8);
+        \node at (3,1.5) {\tiny Data $p_0$};
 
-        % Skip Connections (Vertical)
-        \draw [skip] (b1) -- (b16) node[midway, right, black, scale=0.6] {Add};
-        \draw [skip] (b2) -- (b15);
-        \draw [skip] (b3) -- (b14);
-        \draw [skip] (b4) -- (b13);
-        \draw [skip] (b5) -- (b12);
-        \draw [skip] (b6) -- (b11);
-        \draw [skip] (b7) -- (b10);
-
-        % Input/Output labels
-        \node [left of=b1, xshift=0.3cm, io] {Input};
-        \node [left of=b16, xshift=0.3cm, io] {Output};
-
-    \end{tikzpicture}
+        % Vector Field Arrows
+        \foreach \y in {-0.5, 0, 0.5} {
+            \draw[->, thick, blue!60] (-2, \y) -- (1.5, \y + 0.3);
         }
+
+        \node[blue] at (-0.1, 1.2) {$v_t(x) \approx \text{DiT}(x_t, t, c)$};
+
+        % Equation
+        \node at (0, -1.5) [draw, rounded corners, fill=orange!5]
+            {$\mathcal{L}_{FM} = \mathbb{E}_{t, x_0, x_1} \left\| v_t(x_t) - (x_1 - x_0) \right\|^2$};
+    \end{tikzpicture}
     \end{center}

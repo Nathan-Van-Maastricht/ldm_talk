@@ -230,7 +230,7 @@ return x + self.proj_out(out)
     \begin{itemize}
         \setlength{\itemsep}{1em}
         \item \textbf{Downsampling:} Uses a convolutional layer with a $3\times 3$ kernel and a stride of 2 to reduce the spatial dimensions by half
-        \item \textbf{Upsampling:} Uses nearest neighbour interpolation to upscale the spatial dimensions by a factor of 2, followed by a convolutional layer to reduce checkboard artifacting that appears with transposed convolutions
+        \item \textbf{Upsampling:} Uses nearest neighbour interpolation to upscale the spatial dimensions by a factor of 2, followed by a convolutional layer to reduce checkerboard artifacting that appears with transposed convolutions
     \end{itemize}
 
     The downsampling block and upsampling block are attempting to be mirror images of each other with respect to the spatial dimensions
@@ -271,7 +271,7 @@ return x + self.proj_out(out)
         \item Quantised Grid: $[15, 15, 15, 15, 15, 15, 15, 15]$
         \item Codebook size: $15^8$
         \item Downsampling Factor: $8\times (256\rightarrow32)$
-        \item Compression Factor: $24\times$. $256\times256\times256$ $(196,608) \rightarrow 32\times32\times8$ $(8,192)$
+        \item Compression Factor: $24\times$. $256\times256\times3$ $(196,608) \rightarrow 32\times32\times8$ $(8,192)$
     \end{itemize}
 \end{frame}
 
@@ -303,6 +303,7 @@ return x + self.proj_out(out)
 \begin{frame}
     \frametitle{What's Been Skipped?}
     \begin{itemize}
+        \setlength{\itemsep}{1em}
         \item Code book utilisation monitoring
         \item Program optimisation such as memory management, device management
         \item Training compromises such as gradient accumulation, what effective batch size is useful, how hyperparameter values were selected, why some values had warmup and some didn't
@@ -326,7 +327,7 @@ return x + self.proj_out(out)
     \frametitle{Architecture}
     \begin{itemize}
         \setlength{\itemsep}{1em}
-        \item Backbone: 16 Transformer blocks using patch-based attention
+        \item 16 Transformer blocks using patch-based attention
         \item Skip connections link early blocks to late blocks
         \item Self-attention to capture spatial dependencies
         \item Cross-attention to inject text conditioning
@@ -408,22 +409,42 @@ return x + self.proj_out(out)
 
 \begin{frame}
     \frametitle{Adaptive Layer Norm}
-    Instead of a static Layer Norm $\gamma$, $\beta$, and $\alpha$ are calulated per transformer block from the combined timed and text embedding.
+    Instead of a static Layer Norm $\gamma$, $\beta$, and $\alpha$ are calulated per transformer block from the combined time and text embedding.
 
     \vspace{5mm}
     These are used in a gating mechanism, allowing less or more weight for the transformers parameters, initially not even using the transformers parameters.
 \end{frame}
 
+\begin{frame}
+    \frametitle{Data}
+    \begin{itemize}
+        \setlength{\itemsep}{1em}
+        \item CC12M is a dataset composed by google, with roughly 6M image/caption pairs still available
+        \item Re-LAION-Caption 19M is by supermodel research derived from LAION 5B, using roughly 3M images, with four potential captions each, focusing on subject, setting, aesthetic, camera details
+    \end{itemize}
+\end{frame}
+
+\begin{frame}
+    \frametitle{Preprocessing}
+    \begin{itemize}
+        \setlength{\itemsep}{1em}
+        \item Encode all images and captions ahead of time
+        \item Ensure dataloader has enough bandwidth on storage to keep the compute saturated
+    \end{itemize}
+\end{frame}
+
 \begin{frame}[fragile]
+    To recap, we're trying to train a model to learn the vector field $v_t(x)$ that satisfies $$\frac{dx}{dt}=v_t(x)$$ which corresponds to learning a straight line path from the noise $p_1$ to the data $p_0$.
+
     \begin{center}
     \begin{tikzpicture}[scale=0.8]
         % Noise Distribution
         \draw[fill=gray!20, opacity=0.5] (-3,0) circle (0.8);
-        \node at (-3,1.2) {\tiny Noise $p_0$};
+        \node at (-3,1.2) {\tiny Noise $p_1$};
         
         % Data Distribution
         \draw[fill=blue!20, opacity=0.5] (3,0.5) ellipse (1.2 and 0.8);
-        \node at (3,1.5) {\tiny Data $p_1$};
+        \node at (3,1.5) {\tiny Data $p_0$};
         
         % Vector Field Arrows
         \foreach \y in {-0.5, 0, 0.5} {
@@ -440,13 +461,71 @@ return x + self.proj_out(out)
 \end{frame}
 
 \begin{frame}
+    \frametitle{Optimisations and Stability}
+    \begin{itemize}
+        \setlength{\itemsep}{1em}
+        \item EMA smooths out the weight updates
+        \item Training in bf16 is sufficient for most calculations, with the loss being calculated in full precision still
+        \item Learning rate warmup, hold, and cooldown
+        \item Classifier free guidance
+    \end{itemize}
+\end{frame}
+
+\begin{frame}
     \frametitle{What's been skipped?}
     \begin{itemize}
         \setlength{\itemsep}{1em}
         \item How to implement the attention mechanism, in particular how to normalise the QKV tensors
         \item Why we only apply RoPE to the self-attention but not the cross-attention
+        \item Why this differential equation?
+        \item Issues with data handling
+        \item What's being monitored
     \end{itemize}
 \end{frame}
 
 \section{Sampling}
+
+\begin{frame}
+    \frametitle{We've got a model, now what? RK2}
+    \begin{enumerate}
+        \setlength{\itemsep}{1em}
+        \item Take a half-step using the initial velocity predicted by the model
+        \item Re-evaluate the velocity field at that midpoint
+        \item Take the full step using the refined velocity
+    \end{enumerate}
+
+    \begin{center}
+    \begin{tikzpicture}[scale=0.8]
+        \draw[->] (0,0) -- (5,0) node[right] {$t$};
+        \draw[thick, blue, dashed] (4,2) -- (2,1) node[midway, above left, black] {\tiny Euler Estimate};
+        \draw[thick, red] (4,2) .. controls (3,1.5) .. (0,0.5) node[near start, below] {\tiny Midpoint Path};
+        \filldraw [red] (2,1.25) circle (2pt) node[above] {\tiny $v_{mid}$};
+        \node at (4.5, 2.2) {$t=1$};
+        \node at (-0.5, 0.5) {$t=0$};
+    \end{tikzpicture}
+    \end{center}
+\end{frame}
+
+\begin{frame}
+    \frametitle{Classifier-Free Guidance}
+    Classifier-Free Guidance moves the sample away from the ``generic'' distribution and toward the specific ``text-aligned'' distribution, attempting to focus the model.
+
+    \vspace{5mm}
+    There is also the concept of a negative prompt, pushing away from concepts such as ``blurred'' or ``out of focus''.
+\end{frame}
+
+\begin{frame}
+    \frametitle{Post Sampling}
+    \begin{itemize}
+        \setlength{\itemsep}{1em}
+        \item FSQ Snapping: Round the output of the DiT to the level the FSQ-VAE expect
+        \item Classifier-free guidance: Move the sample away from the ``generic'' distribution toward the specific ``text-aligned'' distribution, in effect focusing the model
+    \end{itemize}
+\end{frame}
+
+\begin{frame}
+    \frametitle{Sample}
+    \centering
+    \includegraphics[height=0.8\textheight]{images/cfg_snapping.png}
+\end{frame}
 \end{document}
