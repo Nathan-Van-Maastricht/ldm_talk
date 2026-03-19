@@ -313,6 +313,16 @@ return x + self.proj_out(out)
 \section{DiT-UNet}
 
 \begin{frame}
+    \frametitle{Training DiT-UNet}
+    \begin{itemize}
+        \setlength{\itemsep}{1em}
+        \item The VAE encodes images into latents
+        \item Noise is added to the latents proportional to a time variable between 0 and 1
+        \item The DiT-UNet predicts a proxy for this noise called ``velocity''
+    \end{itemize}
+\end{frame}
+
+\begin{frame}
     \frametitle{Architecture}
     \begin{itemize}
         \setlength{\itemsep}{1em}
@@ -385,6 +395,57 @@ return x + self.proj_out(out)
             \end{tikzpicture}
         }
     \end{center}
+\end{frame}
+
+\begin{frame}
+    \frametitle{Attention}
+    \begin{itemize}
+        \setlength{\itemsep}{1em}
+        \item Latent tokens (patches) are related to each other by self-attention, with 2D RoPE for relative spatial relationships
+        \item Mapping text tokens to spatial regions is done with cross-attention
+    \end{itemize}
+\end{frame}
+
+\begin{frame}
+    \frametitle{Adaptive Layer Norm}
+    Instead of a static Layer Norm $\gamma$, $\beta$, and $\alpha$ are calulated per transformer block from the combined timed and text embedding.
+
+    \vspace{5mm}
+    These are used in a gating mechanism, allowing less or more weight for the transformers parameters, initially not even using the transformers parameters.
+\end{frame}
+
+\begin{frame}[fragile]
+    \begin{center}
+    \begin{tikzpicture}[scale=0.8]
+        % Noise Distribution
+        \draw[fill=gray!20, opacity=0.5] (-3,0) circle (0.8);
+        \node at (-3,1.2) {\tiny Noise $p_0$};
+        
+        % Data Distribution
+        \draw[fill=blue!20, opacity=0.5] (3,0.5) ellipse (1.2 and 0.8);
+        \node at (3,1.5) {\tiny Data $p_1$};
+        
+        % Vector Field Arrows
+        \foreach \y in {-0.5, 0, 0.5} {
+            \draw[->, thick, blue!60] (-2, \y) -- (1.5, \y + 0.3);
+        }
+        
+        \node[blue] at (-0.1, 1.2) {$v_t(x) \approx \text{DiT}(x_t, t, c)$};
+        
+        % Equation
+        \node at (0, -1.5) [draw, rounded corners, fill=orange!5] 
+            {$\mathcal{L}_{FM} = \mathbb{E}_{t, x_0, x_1} \left\| v_t(x_t) - (x_1 - x_0) \right\|^2$};
+    \end{tikzpicture}
+    \end{center}
+\end{frame}
+
+\begin{frame}
+    \frametitle{What's been skipped?}
+    \begin{itemize}
+        \setlength{\itemsep}{1em}
+        \item How to implement the attention mechanism, in particular how to normalise the QKV tensors
+        \item Why we only apply RoPE to the self-attention but not the cross-attention
+    \end{itemize}
 \end{frame}
 
 \section{Sampling}
