@@ -1,4 +1,4 @@
-A talk summarising my work on a text condition latent diffusion model using a flow matching target.
+A talk given at PrioriAnalytica summarising my work on a text condition latent diffusion model using a flow matching target.
 
 The models in the talk were all trained from scratch.
 
